@@ -113,12 +113,77 @@ public class Model extends Observable {
         // TODO: Modify this.board (and perhaps this.score) to account
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
-
+        changed = moveTilesInDirection(side);
         checkGameOver();
         if (changed) {
             setChanged();
         }
         return changed;
+    }
+
+    /**
+     * Moves tiles in the side direction
+     * @param side the side you want to move the tiles to
+     * @return whether any tile is moved
+     */
+    private boolean moveTilesInDirection(Side side) {
+        boolean changed;
+        board.setViewingPerspective(side);
+        changed = moveTilesUp();
+        board.setViewingPerspective(Side.NORTH);
+        return changed;
+    }
+
+    /**
+     * Moves the tiles up
+     * @return whether there's at least one tile that's moved up.
+     */
+    private boolean moveTilesUp() {
+        boolean changed = false;
+        for (int c = 0; c < board.size(); c++) {
+            int untilRow = board.size() - 1; // To avoid merging again the tile that's previously merged in the same column.
+            for (int r = board.size() - 1; r >= 0; r--) {
+                Tile t = board.tile(c, r);
+                if (t == null) { // Skip moving space place.
+                    continue;
+                }
+                int rowIndex = findValidRowIndexForColumn(c, r + 1, untilRow,t);
+                if (rowIndex != -1) { // We could move the tile to a valid place
+                    boolean wasMerge = board.move(c, rowIndex, t);
+                    if (wasMerge) {
+                        score += board.tile(c, rowIndex).value();
+                        untilRow--;
+                    }
+                    changed = true;
+                }
+            }
+        }
+        return changed;
+    }
+
+    /**
+     * Finds a valid row index in range fromRow to toRow (Inclusive), given the col.
+     * @param col the index of the column to search within.
+     * @param fromRow the index of the first row to start looking at.
+     * @param toRow the index of the last row to end looking at (inclusive).
+     * @param t the tile to find valid index for.
+     * @return a valid row index in the range fromRow to toRow. Otherwise, returns -1 indicating that you can't move.
+     */
+    private int findValidRowIndexForColumn(int col, int fromRow, int toRow, Tile t) {
+        int validRowIndex = -1;
+        for (int i = fromRow; i <= toRow; i++) {
+            Tile curr = board.tile(col, i);
+            if (curr == null) { // Possible space to move tile to
+                validRowIndex = i;
+                continue;
+            }
+            if (curr.value() == t.value()) { // There's a merge
+                return i;
+            } else { // We don't need to keep searching, we touched a blocking tile that can't be merged!
+                break;
+            }
+        }
+        return validRowIndex;
     }
 
     /** Checks if the game is over and sets the gameOver variable
@@ -138,6 +203,13 @@ public class Model extends Observable {
      * */
     public static boolean emptySpaceExists(Board b) {
         // TODO: Fill in this function.
+        for (int col = 0; col < b.size(); col++) {
+            for (int row = 0; row < b.size(); row++) {
+                if (b.tile(col, row) == null) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -148,6 +220,17 @@ public class Model extends Observable {
      */
     public static boolean maxTileExists(Board b) {
         // TODO: Fill in this function.
+        for (int col = 0; col < b.size(); col++) {
+            for (int row = 0; row < b.size(); row++) {
+                Tile tile = b.tile(col, row);
+                if (tile == null) {
+                    continue;
+                }
+                if (tile.value() == MAX_PIECE) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -159,6 +242,56 @@ public class Model extends Observable {
      */
     public static boolean atLeastOneMoveExists(Board b) {
         // TODO: Fill in this function.
+        return emptySpaceExists(b) || canMerge(b);
+    }
+
+    private static boolean canMerge(Board b) {
+        for (int col = 0; col < b.size(); col++) {
+            for (int row = 0; row < b.size(); row++) {
+                Tile currentTile = b.tile(col, row);
+                int leftCol = col - 1, rightCol = col + 1;
+                int aboveRow = row - 1, downRow = row + 1;
+                if (canMergeToLeft(b, row, leftCol, currentTile)
+                       || canMergeToRight(b, row, rightCol, currentTile)
+                       || canMergeToAbove(b, col, aboveRow, currentTile)
+                       || canMergeToDown(b, col, downRow, currentTile)
+                ) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean canMergeToDown(Board b, int col, int downRow, Tile currentTile) {
+        if (downRow < b.size()) {
+            Tile downTile = b.tile(col, downRow);
+            return currentTile.value() == downTile.value();
+        }
+        return false;
+    }
+
+    private static boolean canMergeToAbove(Board b, int col, int aboveRow, Tile currentTile) {
+        if (aboveRow >= 0) {
+            Tile aboveTile = b.tile(col, aboveRow);
+            return currentTile.value() == aboveTile.value();
+        }
+        return false;
+    }
+
+    private static boolean canMergeToRight(Board b, int row, int rightCol, Tile currentTile) {
+        if (rightCol < b.size()) {
+            Tile rightTile = b.tile(rightCol, row);
+            return currentTile.value() == rightTile.value();
+        }
+        return false;
+    }
+
+    private static boolean canMergeToLeft(Board b, int row, int leftCol, Tile currentTile) {
+        if (leftCol >= 0) {
+            Tile leftTile = b.tile(leftCol, row);
+            return currentTile.value() == leftTile.value();
+        }
         return false;
     }
 
