@@ -1,0 +1,28 @@
+package deque;
+
+import java.util.Comparator;
+
+public class MaxArrayDeque<T> extends ArrayDeque<T> {
+    private final Comparator<T> comparator;
+
+    public MaxArrayDeque(Comparator<T> comparator) {
+        this.comparator = comparator;
+    }
+
+    public T max() {
+        return max(this.comparator);
+    }
+
+    public T max(Comparator<T> comparator) {
+        if (isEmpty()) {
+            return null;
+        }
+        T max = get(0);
+        for (int i = 0; i < size(); i++) {
+            if (comparator.compare(max, get(i)) < 0) {
+                max = get(i);
+            }
+        }
+        return max;
+    }
+}
