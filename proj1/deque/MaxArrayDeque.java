@@ -5,8 +5,8 @@ import java.util.Comparator;
 public class MaxArrayDeque<T> extends ArrayDeque<T> {
     private final Comparator<T> comparator;
 
-    public MaxArrayDeque(Comparator<T> comparator) {
-        this.comparator = comparator;
+    public MaxArrayDeque(Comparator<T> comp) {
+        this.comparator = comp;
     }
 
     public T max() {
