@@ -13,5 +13,4 @@ public interface Deque<T> {
     }
     T get(int index);
     void printDeque();
-    Iterator<T> iterator();
 }
